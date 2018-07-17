@@ -1,0 +1,2 @@
+class LithiumRestClient(object):
+    pass
