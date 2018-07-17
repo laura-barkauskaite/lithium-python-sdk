@@ -18,7 +18,7 @@ setup(
     author_email='laura.barkauskaite@gmail.com',
     packages=['lithiumpythonsdk'],
     install_requires=[
-        'requests'
+        'requests','google-api-python-client'
     ],
     description='Lithium Python SDK',
     long_description=long_description
