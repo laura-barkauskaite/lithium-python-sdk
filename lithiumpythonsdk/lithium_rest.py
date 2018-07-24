@@ -103,6 +103,7 @@ class LithiumRestClient(object):
         query = 'SELECT+*+FROM+users+LIMIT+{limit}+OFFSET+{offset}'.format(limit = self.batch_size, offset = offset)
         sessionkey = self.get_session_key()
         resp = self.get('https://{community_id}/api/2.0/search?q={query}&restapi.session_key={sessionkey}&api.pretty_print=true'.format(
-        	community_id = self.community_id,query = query,sessionkey=sessionkey)
+        	community_id = self.community_id,
+			query = query,sessionkey=sessionkey)
         ,headers)
         return resp.text
