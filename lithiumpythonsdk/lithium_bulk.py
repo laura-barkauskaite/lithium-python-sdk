@@ -43,7 +43,7 @@ class LithiumBulkClient(object):
         if kwargs.get('json'):
             logger.info('payload: {json}'.format(**kwargs))
         resp = requests.request(**kwargs)
-		if resp.status_code == 200:
+        if resp.status_code == 200:
             text = ''
         else:
             text = resp.text
