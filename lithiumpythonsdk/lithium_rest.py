@@ -12,14 +12,14 @@ logger = logging.getLogger('LithiumRestClient')
 
 class LithiumRestClient(object):
 
-    def __init__(self, community_id,client_id,login, password,batch_size):
+    def __init__(self, community_id,client_id,login, password,object,batch_size):
         self.login = login
         self.password = password
         self.community_id = community_id
         self.client_id = client_id
         self.sessionkey = ''
         self.batch_size = batch_size
-        self.user_count = 0
+        self.object = object
 
 # function to make get/post request
     def make_request(self, **kwargs):
@@ -83,27 +83,25 @@ class LithiumRestClient(object):
 
         return self.sessionkey
 
-# function to get users count
-    def get_users_count(self):
+# function to get count
+    def get_count(self):
         headers = self.build_headers()
-        query = 'SELECT+count(*)+FROM+users'
+        query = 'SELECT+count(*)+FROM+{object}'.format(object = self.object)
         sessionkey = self.get_session_key()
         self.sessionkey = sessionkey
         resp = self.get('https://{community_id}/api/2.0/search?q={query}&restapi.session_key={sessionkey}&api.pretty_print=true'.format(
-        	community_id = self.community_id,query = query,sessionkey=sessionkey)
+            community_id = self.community_id,query = query,sessionkey=sessionkey)
         ,headers)
         respjson = json.loads(resp.text)
         count  = respjson["data"]["count"]
-        self.user_count = count
         return count
 
-# function to get user batch
-    def get_users_batch(self,offset):
+# function to get batch
+    def get_batch(self,offset):
         headers = self.build_headers()
-        query = 'SELECT+*+FROM+users+LIMIT+{limit}+OFFSET+{offset}'.format(limit = self.batch_size, offset = offset)
+        query = 'SELECT+*+FROM+{object}+LIMIT+{limit}+OFFSET+{offset}'.format(object = self.object,limit = self.batch_size, offset = offset)
         sessionkey = self.get_session_key()
         resp = self.get('https://{community_id}/api/2.0/search?q={query}&restapi.session_key={sessionkey}&api.pretty_print=true'.format(
-        	community_id = self.community_id,
-			query = query,sessionkey=sessionkey)
+            community_id = self.community_id,query = query,sessionkey=sessionkey)
         ,headers)
         return resp.text
