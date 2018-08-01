@@ -3,16 +3,25 @@ import logging
 import base64
 import datetime
 import dateutil.parser
-from xml.dom import minidom
 import json
+import asyncio
+import aiofiles
+import aiohttp
 
+from xml.dom import minidom
 from requests.exceptions import RequestException
 
 logger = logging.getLogger('LithiumRestClient')
 
 class LithiumRestClient(object):
 
-    def __init__(self, community_id,client_id,login, password,object,batch_size):
+    def __init__(self, 
+                 community_id,
+                 client_id,
+                 login, 
+                 password,
+                 object,
+                 batch_size):
         self.login = login
         self.password = password
         self.community_id = community_id
@@ -74,13 +83,16 @@ class LithiumRestClient(object):
 
 # function to get session key
     def get_session_key(self):
-        resp = self.post('https://{community_id}/restapi/vc/authentication/sessions/login?user.login={login}&user.password={password}'.format(
-        	community_id=self.community_id,login=self.login,password=self.password),'')
-
+        resp = self.post(('https://{community_id}/restapi/vc/'
+                         'authentication/sessions/login?user.login={login}'
+                         '&user.password={password}').format(
+        	                 community_id=self.community_id,
+                             login=self.login,
+                             password=self.password)
+                        ,'')
         xml = minidom.parseString(resp.text)
         keylist = xml.getElementsByTagName('value')
         self.sessionkey = keylist[0].firstChild.nodeValue
-
         return self.sessionkey
 
 # function to get count
@@ -89,9 +101,13 @@ class LithiumRestClient(object):
         query = 'SELECT+count(*)+FROM+{object}'.format(object = self.object)
         sessionkey = self.get_session_key()
         self.sessionkey = sessionkey
-        resp = self.get('https://{community_id}/api/2.0/search?q={query}&restapi.session_key={sessionkey}&api.pretty_print=true'.format(
-            community_id = self.community_id,query = query,sessionkey=sessionkey)
-        ,headers)
+        resp = self.get(('https://{community_id}/api/2.0/'
+                         'search?q={query}&restapi.session_key={sessionkey}'
+                         '&api.pretty_print=true').format(
+                              community_id = self.community_id,
+                              query = query,
+                              sessionkey=sessionkey)
+                        ,headers)
         respjson = json.loads(resp.text)
         count  = respjson["data"]["count"]
         return count
@@ -99,9 +115,60 @@ class LithiumRestClient(object):
 # function to get batch
     def get_batch(self,offset):
         headers = self.build_headers()
-        query = 'SELECT+*+FROM+{object}+LIMIT+{limit}+OFFSET+{offset}'.format(object = self.object,limit = self.batch_size, offset = offset)
+        query = 'SELECT+*+FROM+{object}+LIMIT+{limit}+OFFSET+{offset}'.format(
+            object = self.object,
+            limit = self.batch_size, 
+            offset = offset)
         sessionkey = self.get_session_key()
-        resp = self.get('https://{community_id}/api/2.0/search?q={query}&restapi.session_key={sessionkey}&api.pretty_print=true'.format(
-            community_id = self.community_id,query = query,sessionkey=sessionkey)
-        ,headers)
+        resp = self.get(('https://{community_id}/api/2.0/'
+                         'search?q={query}&restapi.session_key={sessionkey}'
+                         '&api.pretty_print=true').format(
+                             community_id = self.community_id,
+                             query = query,
+                             sessionkey=sessionkey)
+                        ,headers)
         return resp.text
+
+# async function to get user ids
+    async def async_collect_user_ids(self,offset,users_args):
+        headers = self.build_headers()
+        query = 'SELECT+id+FROM+users+LIMIT+{limit}+OFFSET+{offset}'.format(
+            limit = self.batch_size, 
+            offset = offset)
+        sessionkey = self.get_session_key()
+        async with aiohttp.ClientSession() as session:
+            async with session.get(('https://{community_id}/api/2.0/'
+                                    'search?q={query}&'
+                                    'restapi.session_key={sessionkey}&'
+                                    'api.pretty_print=true').format(
+                                        community_id = self.community_id,
+                                        query = query,
+                                        sessionkey=sessionkey)
+                                    , headers=headers
+                                    , params='') as resp:
+                data = await resp.json()
+        users_args.extend(
+            [(item['id']) for item in data['data']['items']])
+
+# async function to get user permissions
+    async def async_get_user_permissions(self,id):
+        records = {'roleid': "none", 'rolename': "none", 'userid':id}
+        sessionKey = self.get_session_key()
+        url = ('https://{community_id}/restapi/vc/users/id/{id}/'
+              'roles?restapi.session_key={sessionKey}&'
+              'restapi.response_format=json&api.pretty_print=true').format(
+                   community_id=self.community_id,
+                   id=id,
+                   sessionKey=sessionKey);
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers='', params='') as resp:
+                data = await resp.text()
+                data = json.loads(data)
+                if  data["response"]["roles"]["role"]:
+                    for item in data["response"]["roles"]["role"]:
+                        roleid = str(item["id"]["$"])
+                        rolename = str(item["name"]["$"])
+                        records = {'roleid': roleid, 
+                                   'rolename': rolename, 
+                                   'userid': id}
+        return records
