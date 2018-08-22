@@ -61,7 +61,7 @@ class LithiumBulkClient(object):
             headers=headers
         ))
         if r.status_code == 200:
-            return r
+            return r.json()
         else:
             raise RequestException(('Status code is {status_code}.'
                                     'Response is {response}').format(
