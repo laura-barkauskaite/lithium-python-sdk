@@ -8,7 +8,7 @@ from requests.exceptions import RequestException
 
 logger = logging.getLogger('LithiumBulkClient')
 BULK_URL = 'https://eu.api.lithium.com/lsi-data/v1/data/export/community'
-
+RETRIES = 10
 
 class LithiumBulkClient(object):
 
@@ -40,17 +40,43 @@ class LithiumBulkClient(object):
 # function to make get/post request
     def make_request(self, **kwargs):
         logger.info(u'{method} Request: {url}'.format(**kwargs))
-        if kwargs.get('json'):
-            logger.info('payload: {json}'.format(**kwargs))
-        resp = requests.request(**kwargs)
-        if resp.status_code == 200:
-            text = ''
-        else:
-            text = resp.text
-        logger.info(u'{method} response: {status} {text}'.format(
-                    method=kwargs['method'],
-                    status=resp.status_code,
-                    text=text))
+        keeptrying = True
+        attempt = 1
+        while (keeptrying and (attempt < RETRIES)):
+
+            resp = requests.request(**kwargs)
+
+            if resp.status_code == 200:
+                try:
+                    resp.json()
+                    text = ''
+                    logger.info(u'{method} response: {status}'.format(
+                        method=kwargs['method'],
+                        status=resp.status_code))
+                    keeptrying = False
+                except ValueError:
+                     logger.info(u'Attempt: {attempt} {method} response: {status} {text}'.format(
+                        attempt=str(attempt),
+                        method=kwargs['method'],
+                        status=resp.status_code,
+                        text = 'Error parsing json'))
+                     attempt = attempt + 1
+
+            if resp.status_code == 500:
+                logger.info(u'Attempt: {attempt} {method} response: {status} {text}'.format(
+                        attempt=str(attempt),
+                        method=kwargs['method'],
+                        status=resp.status_code,
+                        text = resp.text))
+                attempt = attempt + 1
+
+            if (resp.status_code != 500 and resp.status_code != 200) :
+                logger.info(u'{method} response: {status} {text}'.format(
+                        method=kwargs['method'],
+                        status=resp.status_code,
+                        text = resp.text))
+                keeptrying = False
+
         return resp
 
 # get request
