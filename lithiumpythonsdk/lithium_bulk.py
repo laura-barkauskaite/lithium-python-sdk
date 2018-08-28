@@ -10,6 +10,7 @@ logger = logging.getLogger('LithiumBulkClient')
 BULK_URL = 'https://eu.api.lithium.com/lsi-data/v1/data/export/community'
 RETRIES = 10
 
+
 class LithiumBulkClient(object):
 
     def __init__(self, community_id, client_id, token):
@@ -55,26 +56,26 @@ class LithiumBulkClient(object):
                         status=resp.status_code))
                     keeptrying = False
                 except ValueError:
-                     logger.info(u'Attempt: {attempt} {method} response: {status} {text}'.format(
+                    logger.info('Attempt: {attempt} {method} response: {status} {text}'.format(
                         attempt=str(attempt),
                         method=kwargs['method'],
                         status=resp.status_code,
-                        text = 'Error parsing json'))
-                     attempt = attempt + 1
+                        text='Error parsing json'))
+                    attempt = attempt + 1
 
             if resp.status_code == 500:
                 logger.info(u'Attempt: {attempt} {method} response: {status} {text}'.format(
                         attempt=str(attempt),
                         method=kwargs['method'],
                         status=resp.status_code,
-                        text = resp.text))
+                        text=resp.text))
                 attempt = attempt + 1
 
-            if (resp.status_code != 500 and resp.status_code != 200) :
+            if (resp.status_code != 500 and resp.status_code != 200):
                 logger.info(u'{method} response: {status} {text}'.format(
                         method=kwargs['method'],
                         status=resp.status_code,
-                        text = resp.text))
+                        text=resp.text))
                 keeptrying = False
 
         return resp
@@ -128,32 +129,23 @@ class LithiumBulkClient(object):
     def buildRequestParameterString(self, start_date, end_date, field_list):
         field_str = ','.join(field_list)
         parurl = ""
-        if (start_date is not None and
-            end_date is not None and 
-            field_list is not None):
-            parurl = ('?fromDate={start_date}&'
-                     'toDate={end_date}&'
-                     'fields={fields}').format(
-                     start_date=start_date, 
-                     end_date=end_date, 
-                     fields=field_str)
+        if (start_date is not None and end_date is not None and field_list is not None):
+            parurl = '?fromDate={start_date}&toDate={end_date}&fields={fields}'.format(
+                start_date=start_date,
+                end_date=end_date,
+                fields=field_str)
         return parurl
 
 # main function to get specified data of specified date interval in
 # specified format
-    def getData(
-        self, 
-        start_date, 
-        end_date, 
-        mime_type="text/csv", 
-        field_list=[]):
-
+    def getData(self, start_date, end_date, mime_type="text/csv", field_list=[]):
         start_date, end_date = self.valid_dates(start_date, end_date)
         self.format = mime_type
         headers = self.buildHeaders()
         param = self.buildRequestParameterString(
             start_date, end_date, field_list)
         resp = self.get('{bulk_url}/{community_id}{param}'.format(
-            bulk_url=BULK_URL,community_id=self.community_id, param=param)
-        ,headers)
+            bulk_url=BULK_URL,
+            community_id=self.community_id,
+            param=param), headers)
         return resp
