@@ -97,7 +97,7 @@ class LithiumRestV2Client(object):
 # function to get batch
     def get_batch(self, offset):
         headers = self.build_headers()
-        query = query + '+LIMIT+{limit}+OFFSET+{offset}'.format(
+        query = self.query + '+LIMIT+{limit}+OFFSET+{offset}'.format(
             limit=self.batch_size,
             offset=offset)
         resp = self.get('https://{community_id}/api/2.0/search?q={query}&restapi.session_key={sessionkey}&api.pretty_print=true'.format(
