@@ -21,6 +21,7 @@ class LithiumRestV2Client(object):
         self.object = object
         self.query = query
         self.batch_size = batch_size
+        self.session_key = self.get_session_key()
 
 # function to make get/post request
     def make_request(self, **kwargs):
@@ -103,5 +104,5 @@ class LithiumRestV2Client(object):
         resp = self.get('https://{community_id}/api/2.0/search?q={query}&restapi.session_key={sessionkey}&api.pretty_print=true'.format(
           community_id=self.community_id,
           query=query,
-          sessionkey=self.get_session_key()), headers)
+          sessionkey=self.session_key), headers)
         return resp

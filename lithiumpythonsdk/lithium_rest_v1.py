@@ -19,6 +19,7 @@ class LithiumRestV1Client(object):
         self.password = password
         self.path = path
         self.page_size = page_size
+        self.session_key = self.get_session_key()
 
 # function to make get/post request
     def make_request(self, **kwargs):
@@ -85,7 +86,7 @@ class LithiumRestV1Client(object):
         resp = self.get('https://{community_id}/restapi/vc/{path}?restapi.session_key={session_key}&restapi.response_format=json&api.pretty_print=true&page_size={page_size}&page={page}'.format(
           community_id=self.community_id,
           path=self.path,
-          session_key=self.get_session_key(),
+          session_key=self.session_key,
           page_size=self.page_size,
           page=page), headers)
         return resp
